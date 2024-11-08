@@ -52,18 +52,19 @@ module.exports = {
         return res.json(
             await Promise.all(result.map( async (PurchaseOrder) => {
                 
-                const loadedItemPhoto = PurchaseOrder.order_item.photo_paths.length > 0 ? await loadPhoto(PurchaseOrder.order_item.photo_paths[0].path) : null;
-            
                 return ({
                 id: PurchaseOrder.id,
                 item_name: PurchaseOrder.order_item.name,
-                item_photo: `data:image/png;base64,`,
+                item_photo: PurchaseOrder.order_item.photo_paths[0].path,
                 created_date: PurchaseOrder.createdAt,
                 updated_date: PurchaseOrder.updatedAt,
                 status: PurchaseOrder.status,
                 changes: PurchaseOrder.order_changes.length,
                 messages: PurchaseOrder.order_messages.length,
-                colaborators: [],
+                colaborators: PurchaseOrder.order_changes.filter((value,index) => PurchaseOrder.order_changes.map((value) => value.change_user.id).indexOf(value.change_user.id) === index).map((value) => ({
+                    name: value.change_user.name,
+                    photo: value.change_user.photo_path
+                })),
             })}))
         );
     },
