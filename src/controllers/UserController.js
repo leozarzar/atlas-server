@@ -2,6 +2,7 @@ const { users, messages } = require('../models');
 const { Op, col } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
+const loadPhoto = require('../photo');
 
 module.exports = {
 
@@ -66,33 +67,12 @@ module.exports = {
             
             const photo_path = user.toJSON().photo_path;
 
-            if(photo_path){
-                try{
-                    const filePath = path.join(__dirname, '../../', photo_path);
-                    const data = await fs.promises.readFile(filePath);
-                    const imageBase64 = data.toString('base64');
-                    return {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        password: user.password,
-                        photo: `data:image/png;base64,${imageBase64}`,
-                    };
-                }catch(error){
-                    console.log(error);
-                    return {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        password: user.password,
-                    };
-                }
-            }
-            else return {
+            return {
                 id: user.id,
                 name: user.name,
                 email: user.email,
                 password: user.password,
+                photo: `data:image/png;base64,${await loadPhoto(photo_path)}`,
             };
         }));
 
@@ -140,11 +120,16 @@ module.exports = {
         const { name, email, password } = req.body;
         const photo_path = req.file.path;
         
-        const createdUser = await users.create({
-            name,
-            email,
-            password,
-            photo_path
+        const createdUser = await users.findOrCreate({
+            where: {
+                name,
+                email,
+            },
+            defaults: {
+                password,
+                photo_path
+            }
+
         })
 
         return res.json(createdUser);
@@ -161,6 +146,26 @@ module.exports = {
                 id,
             }
         });
+
+        if(result === 1) return res.json({
+            message: "SUCCESS: User deleted."
+        });
+        else return res.json({
+            message: "ERROR: User NOT deleted."
+        });
+    },
+    async updateIndex(req,res){
+        const { id } = req.params;
+        console.log(id)
+        console.log(req.body)
+        return res.status(200).json(await users.update(
+            req.body,
+            {
+                where: {
+                    id
+                }
+            }
+        ));
 
         if(result === 1) return res.json({
             message: "SUCCESS: User deleted."

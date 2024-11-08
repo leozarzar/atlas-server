@@ -22,6 +22,7 @@ routes.get('/users/:id/messages/:someone_id',UserController.allMessagesWith);
 routes.post('/users', upload.single('photo'),UserController.store);
 routes.post('/users/:id/messages/:recipient_id',UserController.storeMessageTo);
 routes.delete('/users/:id',UserController.removeIndex);
+routes.patch('/users/:id',UserController.updateIndex);
 
 //Items
 
@@ -30,7 +31,7 @@ routes.get('/items/:id',ItemController.index);
 routes.get('/items/:id/photos',ItemController.allPhotos);
 routes.get('/items/:id/purchase_orders',ItemController.allPurchaseOrders);
 routes.post('/items',ItemController.store);
-routes.post('/items/:id/photos',ItemController.storePhoto);
+routes.post('/items/:id/photos', upload.single('photo'),ItemController.storePhoto);
 routes.delete('/items/:id',ItemController.removeIndex);
 
 //Purchase Orders
@@ -43,5 +44,6 @@ routes.post('/purchase_orders',PurchaseOrderController.store);
 routes.post('/purchase_orders/:id/users/:user/changes',PurchaseOrderController.storeChange);
 routes.post('/purchase_orders/:id/users/:user/messages',PurchaseOrderController.storeMessage);
 routes.delete('/purchase_orders/:id',PurchaseOrderController.removeIndex);
+routes.patch('/purchase_orders/:id',PurchaseOrderController.updateIndex);
 
 module.exports = routes;

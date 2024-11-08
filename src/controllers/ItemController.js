@@ -29,8 +29,10 @@ module.exports = {
 
         const { name } = req.body;
         
-        const createdItem = await items.create({
-            name,
+        const createdItem = await items.findOrCreate({
+            where:{
+                name
+            },
         })
 
         return res.json(createdItem);
@@ -69,10 +71,10 @@ module.exports = {
     },
     async storePhoto(req,res){
         const { id } = req.params;
-        const { path } = req.body;
+        const photo_path = req.file.path;
 
         const createdPhoto = await photo_paths.create({
-            path,
+            path: photo_path,
             item: id,
         });
 

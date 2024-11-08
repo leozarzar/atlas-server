@@ -1,5 +1,6 @@
 const { purchase_orders, messages, changes } = require('../models');
 const { Op, col } = require('sequelize');
+const loadPhoto = require('../photo');
 
 module.exports = {
 
@@ -30,7 +31,13 @@ module.exports = {
                     association: 'order_item',
                     attributes: [
                         'name',
-                    ]
+                    ],
+                    include: {
+                        association: 'photo_paths',
+                        attributes: [
+                            'path',
+                        ],
+                    }
                 }
             ]
         });
@@ -43,19 +50,21 @@ module.exports = {
         const result = allPurchaseOrders.map((PurchaseOrder) => PurchaseOrder.toJSON());
 
         return res.json(
-            result.map((PurchaseOrder) => ({
+            await Promise.all(result.map( async (PurchaseOrder) => {
+                
+                const loadedItemPhoto = PurchaseOrder.order_item.photo_paths.length > 0 ? await loadPhoto(PurchaseOrder.order_item.photo_paths[0].path) : null;
+            
+                return ({
                 id: PurchaseOrder.id,
                 item_name: PurchaseOrder.order_item.name,
+                item_photo: `data:image/png;base64,`,
                 created_date: PurchaseOrder.createdAt,
                 updated_date: PurchaseOrder.updatedAt,
                 status: PurchaseOrder.status,
                 changes: PurchaseOrder.order_changes.length,
                 messages: PurchaseOrder.order_messages.length,
-                colaborators: PurchaseOrder.order_changes.filter((value,index) => PurchaseOrder.order_changes.map((value) => value.change_user.id).indexOf(value.change_user.id) === index).map((value) => ({
-                    name: value.change_user.name,
-                    photo: value.change_user.photo_path
-                })),
-            }))
+                colaborators: [],
+            })}))
         );
     },
     async index(req,res){
@@ -157,6 +166,7 @@ module.exports = {
                         association: 'change_user',
                         attributes: [
                             'name',
+                            'id'
                         ],
                     }
                 },
@@ -208,6 +218,8 @@ module.exports = {
                         association: 'sender',
                         attributes: [
                             'name',
+                            'photo_path',
+                            'id',
                         ],
                     }
                 },
@@ -224,11 +236,13 @@ module.exports = {
         });
 
         return res.json({
-            messages: result.order_messages.map((message) => ({
+            messages: await Promise.all(result.order_messages.map( async (message) => ({
+                photo: `data:image/png;base64,${await loadPhoto(message.sender.photo_path)}`,
+                sender_id: message.sender.id,
                 sender: message.sender.name,
                 date: message.createdAt,
                 content: message.content,
-            })),
+            }))),
         });
     },
     async storeMessage(req,res){
@@ -242,5 +256,17 @@ module.exports = {
         });
 
         return res.json(createdMessage);
-    }
+    },
+    async updateIndex(req,res){
+        const { id } = req.params;
+
+        return res.status(200).json(await purchase_orders.update(
+            req.body,
+            {
+                where: {
+                    id
+                }
+            }
+        ));
+    },
 }
